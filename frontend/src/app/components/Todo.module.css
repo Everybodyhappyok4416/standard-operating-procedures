@@ -1,0 +1,65 @@
+/* src/components/Todo.module.css */
+
+/* アプリ全体の囲い（余白） */
+.container {
+  padding: 20px;
+  font-size:1rem;
+}
+
+/* 手順書テーブル全体の枠組み（外枠の線） */
+.table {
+  width: 100%;
+  border-collapse: collapse; /* セル同士の線を重ねて1本に見せる設定 */
+  border-top: 1px solid #333;   /* テーブル最上部の実線 */
+  border-left: 1px solid #333;  /* テーブル最左部の実線 */
+}
+
+/* 見出し行（一番上の青い列）の背景 */
+.thead tr {
+  background-color: #0052cc; 
+}
+
+/* 見出しセル（「番号」「作業内容」などの文字が入る箱） */
+.th {
+  padding: 1px;
+  border-bottom: 2px solid #333; /* 見出しとリストを分ける太い下線 */
+  border-right: 1px solid #333;  /* 縦の区切り線（実線） */
+  text-align: left;
+  color: white;   
+  font-size: 1.1rem;               /* 見出し文字の色 */
+}
+
+/* リスト表示用のセル（登録された手順が表示される行） */
+.td {
+  padding: 5px;
+  border-bottom: 1px dotted #ccc; /* 手順ごとの区切り（横の破線） */
+  border-right: 1px solid #333;   /* 縦の区切り線（実線） */
+  font-size: 0.9rem;
+}
+
+/* 入力フォーム用のセル（一番下の入力欄がある行の箱） */
+.tdForm {
+  padding: 5px;
+  border-top: 2px solid #333;    /* リスト部分と入力欄を分ける太い上線 */
+  border-right: 1px solid #333;  /* 縦の区切り線（実線） */
+  font-size: 0.9rem;
+}
+
+/* 入力フォーム行全体の背景 */
+.tfoot {
+  background-color: gray; 
+}
+
+/* inputタグ自体の見た目（入力エリア） */
+.input {
+  width: 95%;
+  padding: 1px;
+  font-size: 0.9rem !important; /* 他のスタイルに負けないように!importantを一時的に付与 */
+  font-family: inherit; /* フォントの種類も親から引き継ぐ */
+}
+
+/* 「追加」ボタン自体の見た目 */
+.buttonAdd {
+  width: 100%;
+  cursor: pointer; /* ホバーした時に指マークにする */
+}

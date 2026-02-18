@@ -1,0 +1,15 @@
+services:
+  db:
+    image: postgres:15-alpine
+    container_name: procedure-db
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: procedure_db
+    volumes:
+      - db-store:/var/lib/postgresql/data
+
+volumes:
+  db-store:
