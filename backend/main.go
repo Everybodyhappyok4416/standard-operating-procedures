@@ -58,7 +58,7 @@ func main() {
 	r.Use(cors.New(cors.Config{
 		AllowOrigins: []string{
 			"http://localhost:3000",
-			"https://your-app-name.vercel.app", // ← ここを自分のVercelのURLに変える！
+			"https://sop-frontend-one.vercel.app", // ← ここを自分のVercelのURLに変える！
 		},
 		AllowMethods:     []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
 		AllowHeaders:     []string{"Origin", "Content-Type", "Accept"},
