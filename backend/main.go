@@ -7,8 +7,8 @@ import (
 	"os"
 	"time"
 
-	"github.com/gin-contrib/cors" // これを追加
-	"github.com/gin-gonic/gin"    // これを追加
+	"github.com/gin-contrib/cors"
+	"github.com/gin-gonic/gin"
 	"github.com/jmoiron/sqlx"
 	_ "github.com/lib/pq"
 )
@@ -26,11 +26,9 @@ type Todo struct {
 
 func main() {
 	// ターミナルの環境変数から読み込む設定（推奨）
-	// もし動かなければ、一時的に直接ダブルクォート内にURIを書いてもOKです
 	dsn := os.Getenv("DATABASE_URL")
 	if dsn == "" {
-		// [パスワード] の部分はDBのもの
-		dsn = "postgresql://postgres:Everybodyhappyok%404416%2f%2f@db.cffcwlvblcriaoskfafo.supabase.co:6543/postgres?sslmode=disable"
+		dsn = ""
 	}
 
 	db, err := sqlx.Connect("postgres", dsn)
@@ -153,7 +151,4 @@ func main() {
 		port = "8080" // ローカル用のデフォルト
 	}
 	r.Run(":" + port)
-
-	fmt.Println("🚀 サーバーが http://localhost:8080 で起動しました")
-	r.Run(":8080") // サーバーを起動して待ち受け状態にする
 }
