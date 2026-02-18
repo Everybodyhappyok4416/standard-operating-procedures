@@ -54,8 +54,18 @@ func main() {
 	// --- ここからサーバーの設定 ---
 	r := gin.Default()
 
-	// 【重要】CORS設定：ここが Next.js との通信を許可する行です
-	r.Use(cors.Default())
+	// CORS設定を詳細に指定
+	r.Use(cors.New(cors.Config{
+		AllowOrigins: []string{
+			"http://localhost:3000",
+			"https://your-app-name.vercel.app", // ← ここを自分のVercelのURLに変える！
+		},
+		AllowMethods:     []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
+		AllowHeaders:     []string{"Origin", "Content-Type", "Accept"},
+		ExposeHeaders:    []string{"Content-Length"},
+		AllowCredentials: true,
+		MaxAge:           12 * time.Hour,
+	}))
 
 	// 手順一覧を取得するAPI
 	r.GET("/todos", func(c *gin.Context) {
