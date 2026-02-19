@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import List from "./List";
 import Form from "./Form";
 import styles from "./Todo.module.css";
@@ -10,28 +10,35 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080";
 const Todo = () => {
   const [todos, setTodos] = useState([]);
   const [mounted, setMounted] = useState(false);
+  const [isWakingUp, setIsWakingUp] = useState(false); //起動中フラグ
 
-  useEffect(() => {
-    const fetchTodos = async () => {
-      try {
-        const response = await fetch(`${API_URL}/todos`);
-        if (!response.ok) throw new Error("API接続失敗");
-        const data = await response.json();
-        setTodos(data || []);
-      } catch (error) {
-        console.error("Fetch error:", error);
-      } finally {
-        setMounted(true);
-      }
-    };
-    fetchTodos();
+  // データ取得ロジックを関数として定義
+  const fetchTodos = useCallback(async () => {
+    try {
+      const response = await fetch(`${API_URL}/todos`);
+      if (!response.ok) throw new Error("API接続失敗");
+      
+      const data = await response.json();
+      setTodos(data || []);
+      setIsWakingUp(false); // 成功したらフラグを下ろす
+      setMounted(true);     // 画面を表示させる
+    } catch (error) {
+      console.error("Fetch error:", error);
+      setIsWakingUp(true); // 失敗＝サーバーが寝ていると判断
+      
+      // 5秒後に自動リトライ（レベル1: 叩き起こし続ける）
+      setTimeout(fetchTodos, 5000);
+    }
   }, []);
 
+  useEffect(() => {
+    fetchTodos();
+  }, [fetchTodos]);
+
   const createTodo = async (newTodo) => {
-    // 【重要】フロント側で仮のIDを作らず、DBに採番を任せる
     const { id, ...postData } = newTodo;
     try {
-const response = await fetch(`${API_URL}/todos`,{
+      const response = await fetch(`${API_URL}/todos`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(postData),
@@ -63,13 +70,11 @@ const response = await fetch(`${API_URL}/todos`,{
 
   const updateTodo = async (updatedTodo) => {
     try {
-      const response = await fetch(`${API_URL}/todos/${updatedTodo.id}`,
-        {
-          method: "PUT",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(updatedTodo),
-        },
-      );
+      const response = await fetch(`${API_URL}/todos/${updatedTodo.id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(updatedTodo),
+      });
       if (response.ok) {
         setTodos(todos.map((t) => (t.id === updatedTodo.id ? updatedTodo : t)));
       }
@@ -78,7 +83,29 @@ const response = await fetch(`${API_URL}/todos`,{
     }
   };
 
-  if (!mounted) return null;
+  // 初回ロード中、またはスリープからの復帰待ちの表示
+  if (!mounted || isWakingUp) {
+    return (
+      <div className={styles.container} style={{ textAlign: 'center', padding: '50px' }}>
+        <div className={styles.loader}></div> {/* 既存のCSSにloaderがあれば使用 */}
+        <h2 style={{ color: '#555' }}>サーバーを起動しています...</h2>
+        <p style={{ color: '#888', marginTop: '10px' }}>
+          Renderの無料プランを使用しているため、起動に最大1分ほどかかる場合があります。<br />
+          このまましばらくお待ちください。
+        </p>
+        {/* ローディングアニメーション（簡易版） */}
+        <style jsx>{`
+          div { font-family: sans-serif; }
+          p { animation: pulse 2s infinite; }
+          @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.5; }
+            100% { opacity: 1; }
+          }
+        `}</style>
+      </div>
+    );
+  }
 
   return (
     <div className={styles.container}>
@@ -101,129 +128,3 @@ const response = await fetch(`${API_URL}/todos`,{
 };
 
 export default Todo;
-
-// ーーーーーー
-
-// "use client";
-
-// import { useState, useEffect } from "react";
-// import List from "./List";
-// import Form from "./Form";
-// import styles from "./Todo.module.css";
-
-// const Todo = () => {
-//   // 1. 【状態管理】初期表示の不一致（Hydration Error）を防ぐため、最初は空配列で開始
-//   const [todos, setTodos] = useState([]);
-//   const [mounted, setMounted] = useState(false);
-
-//   // 2. 【読み込み】GoのAPIからデータを取得
-//   useEffect(() => {
-//     const fetchTodos = async () => {
-// try {
-//         const response = await fetch("http://localhost:8080/todos");
-//         if (!response.ok) throw new Error("API接続に失敗しました");
-//         const data = await response.json();
-
-//         // defaultTodosを使わず、DBのデータ（なければ空配列）をそのままセット
-//         setTodos(data || []);
-//       } catch (error) {
-//         console.error("Fetch error:", error);
-//       } finally {
-//         setMounted(true);
-//       }
-//     };
-//     fetchTodos();
-//   }, []);
-
-//   // 3. 【同期】LocalStorageへの保存ロジックは、DB移行に伴い一旦停止
-//   /* useEffect(() => {
-//     if (mounted) {
-//       localStorage.setItem("procedure_todos", JSON.stringify(todos));
-//     }
-//   }, [todos, mounted]);
-//   */
-
-//   // --- ハンドラ関数（データの操作ロジック） ---
-
-//   // 指定したIDの手順を削除
-//   const deleteTodo = async (id) => {
-//     try {
-//       const response = await fetch(`http://localhost:8080/todos/${id}`, {
-//         method: "DELETE",
-//       });
-
-//       if (!response.ok) throw new Error("削除に失敗しました");
-
-//       // DBで消えたら、画面からも消す
-//       setTodos(todos.filter((t) => t.id !== id));
-//     } catch (error) {
-//       console.error("Delete error:", error);
-//     }
-//   };
-
-//   // 新しい手順を追加
-//   const createTodo = async (newTodo) => {
-//     try {
-//       const response = await fetch("http://localhost:8080/todos", {
-//         method: "POST",
-//         headers: {
-//           "Content-Type": "application/json",
-//         },
-//         body: JSON.stringify(newTodo),
-//       });
-
-//       if (!response.ok) throw new Error("データの保存に失敗しました");
-
-//       const savedTodo = await response.json();
-
-//       // DB側でIDが振られた最新のデータを画面（State）に追加
-//       setTodos([...todos, savedTodo]);
-//     } catch (error) {
-//       console.error("Create error:", error);
-//       alert("保存に失敗しました。サーバーの状態を確認してください。");
-//     }
-//   };
-
-//   // 手順の内容を更新（編集機能で使用）
-//   const updateTodo = async (updatedTodo) => {
-//     try {
-//       const response = await fetch(
-//         `http://localhost:8080/todos/${updatedTodo.id}`,
-//         {
-//           method: "PUT",
-//           headers: { "Content-Type": "application/json" },
-//           body: JSON.stringify(updatedTodo),
-//         },
-//       );
-
-//       if (!response.ok) throw new Error("更新に失敗しました");
-
-//       // DB側で更新できたら、画面のStateも更新
-//       setTodos(todos.map((t) => (t.id === updatedTodo.id ? updatedTodo : t)));
-//     } catch (error) {
-//       console.error("Update error:", error);
-//     }
-//   };
-
-//   return (
-//     <div className={styles.container}>
-//       <table className={styles.table}>
-//         <thead className={styles.thead}>
-//           <tr>
-//             <th className={styles.th}>番号</th>
-//             <th className={styles.th}>大項目</th>
-//             <th className={styles.th}>作業内容</th>
-//             <th className={styles.th}>環境</th>
-//             <th className={styles.th}>期待値</th>
-//             <th className={styles.th}>操作</th>
-//           </tr>
-//         </thead>
-//         {/* リスト表示とフォームにそれぞれ関数を渡す */}
-//         <List todos={todos} deleteTodo={deleteTodo} updateTodo={updateTodo} />
-//         <Form createTodo={createTodo} />
-//       </table>
-//     </div>
-//   );
-// };
-
-// export default Todo;
