@@ -90,7 +90,7 @@ const Todo = () => {
         <div className={styles.loader}></div> {/* 既存のCSSにloaderがあれば使用 */}
         <h2 style={{ color: '#555' }}>サーバーを起動しています...</h2>
         <p style={{ color: '#888', marginTop: '10px' }}>
-          Renderの無料プランを使用しているため、起動に最大1分ほどかかる場合があります。<br />
+          Renderの無料プランを使用しているため、起動に2,3分ほどかかる場合があります。<br />
           このまましばらくお待ちください。
         </p>
         {/* ローディングアニメーション（簡易版） */}
