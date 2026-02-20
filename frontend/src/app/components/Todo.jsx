@@ -69,7 +69,7 @@ const Todo = () => {
   };
 
   const updateTodo = async (updatedTodo) => {
-    //updatedTodoは引数
+    //updatedTodoは引数,{...todo, [key]: tempValue} がわたる
     try {
       const response = await fetch(`${API_URL}/todos/${updatedTodo.id}`, {
         method: "PUT",
