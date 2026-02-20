@@ -6,10 +6,11 @@ import Form from "./Form";
 import styles from "./Todo.module.css";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080";
+//backend　本番環境なら本番backend、開発環境ならローカル
 
 const Todo = () => {
   const [todos, setTodos] = useState([]);
-  const [mounted, setMounted] = useState(false);
+  const [mounted, setMounted] = useState(false);//空データ表示のチラつき抑止
   const [isWakingUp, setIsWakingUp] = useState(false); //起動中フラグ
 
   // データ取得ロジックを関数として定義
@@ -17,33 +18,32 @@ const Todo = () => {
     try {
       const response = await fetch(`${API_URL}/todos`);
       if (!response.ok) throw new Error("API接続失敗");
-      
+
       const data = await response.json();
-      setTodos(data || []);
+      setTodos(data || []); // 空配列を&で入れて他の関数がクラッシュしないように
       setIsWakingUp(false); // 成功したらフラグを下ろす
-      setMounted(true);     // 画面を表示させる
+      setMounted(true); // 画面を表示させる
     } catch (error) {
       console.error("Fetch error:", error);
       setIsWakingUp(true); // 失敗＝サーバーが寝ていると判断
-      
-      // 5秒後に自動リトライ（レベル1: 叩き起こし続ける）
+
+      // 5秒後に自動リトライ
       setTimeout(fetchTodos, 5000);
     }
   }, []);
 
   useEffect(() => {
     fetchTodos();
-  }, [fetchTodos]);
+  }, [fetchTodos]); //データ取得を非同期処理
 
   const createTodo = async (newTodo) => {
-    const { id, ...postData } = newTodo;
+    const { id, ...postData } = newTodo; //クライアント側で振ったIDを削除してDB側で採番
     try {
       const response = await fetch(`${API_URL}/todos`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(postData),
+        headers: { "Content-Type": "application/json" }, //go側にJSON型だと通知
+        body: JSON.stringify(postData), //jsonに変換して送信
       });
-
       if (!response.ok) {
         const errorData = await response.json();
         throw new Error(errorData.error || "保存失敗");
@@ -69,6 +69,7 @@ const Todo = () => {
   };
 
   const updateTodo = async (updatedTodo) => {
+    //updatedTodoは引数
     try {
       const response = await fetch(`${API_URL}/todos/${updatedTodo.id}`, {
         method: "PUT",
@@ -77,30 +78,44 @@ const Todo = () => {
       });
       if (response.ok) {
         setTodos(todos.map((t) => (t.id === updatedTodo.id ? updatedTodo : t)));
-      }
+      } //backendの処理を完了してからブラウザを更新する
     } catch (error) {
       console.error("Update error:", error);
     }
   };
 
-  // 初回ロード中、またはスリープからの復帰待ちの表示
+  // バックエンドのスリープからの復帰待ちの表示
   if (!mounted || isWakingUp) {
     return (
-      <div className={styles.container} style={{ textAlign: 'center', padding: '50px' }}>
-        <div className={styles.loader}></div> {/* 既存のCSSにloaderがあれば使用 */}
-        <h2 style={{ color: '#555' }}>サーバーを起動しています...</h2>
-        <p style={{ color: '#888', marginTop: '10px' }}>
-          Renderの無料プランを使用しているため、起動に2,3分ほどかかる場合があります。<br />
+      <div
+        className={styles.container}
+        style={{ textAlign: "center", padding: "50px" }}
+      >
+        <div className={styles.loader}></div>{" "}
+        <h2 style={{ color: "#555" }}>サーバーを起動しています...</h2>
+        <p style={{ color: "#888", marginTop: "10px" }}>
+          Renderの無料プランを使用しているため、起動に2,3分ほどかかる場合があります。
+          <br />
           このまましばらくお待ちください。
         </p>
-        {/* ローディングアニメーション（簡易版） */}
+        {/* ローディングアニメーション */}
         <style jsx>{`
-          div { font-family: sans-serif; }
-          p { animation: pulse 2s infinite; }
+          div {
+            font-family: sans-serif;
+          }
+          p {
+            animation: pulse 2s infinite;
+          }
           @keyframes pulse {
-            0% { opacity: 1; }
-            50% { opacity: 0.5; }
-            100% { opacity: 1; }
+            0% {
+              opacity: 1;
+            }
+            50% {
+              opacity: 0.5;
+            }
+            100% {
+              opacity: 1;
+            }
           }
         `}</style>
       </div>
@@ -128,3 +143,14 @@ const Todo = () => {
 };
 
 export default Todo;
+
+//responseが配列ではなくエラーメッセージなら配列じゃないからmapなどでクラッシュする懸念
+//useEffectは本当に必要か？
+//saveを複数回連打したらDBに同じでーたいかない？
+// ...todos, savedTodoでtodosが古いデータである可能性ない？
+//保存時画面がフリーズしない？先に画面更新して裏で更新させない？
+
+// 問い：もしBackendのGoサーバーが「別のPC」や「別のネットワーク」で動いていたらどうなるでしょうか？
+// 今は自分のPCの中で完結しているので localhost で届きますが、本番環境では「ブラウザから見たBackendの住所」が正しく解決される必要があります。
+// また、**CORS（Cross-Origin Resource Sharing）**という、ブラウザのセキュリティ機能が「React（3000番）からGo（8080番）への通信」を「怪しい！」と止めてしまうことがあります。
+// この**「CORSの壁」をGo側でどう突破するか**、バックエンドの実装に興味はありますか？（Go側の設定コードについても解説可能です）

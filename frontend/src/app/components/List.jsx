@@ -11,13 +11,13 @@ const List = ({ todos, deleteTodo, updateTodo }) => {
   const handleDoubleClick = (todo, key) => {
     setEditingCell({ id: todo.id, key });
     setTempValue(todo[key]); // 編集開始時の値をセット
-  };
+  }; //todoは特定の一行、　mapで定義
 
   const handleBlur = (todo, key) => {
     // 値が変わっていたらバックエンドに送る
     if (todo[key] !== tempValue) {
-      updateTodo({ ...todo, [key]: tempValue });
-    }
+      updateTodo({ ...todo, [key]: tempValue }); //値変わらないなら無駄な通信しない
+    } //これらを引数としてupdateTodo関数が走る
     setEditingCell({ id: null, key: null });
   };
 
@@ -64,132 +64,7 @@ const List = ({ todos, deleteTodo, updateTodo }) => {
 };
 
 export default List;
-// ーーーーーーーー
-// "use client";
 
-// import { useState } from "react";
-// import styles from "./Todo.module.css";
-
-// const List = ({ todos, deleteTodo, updateTodo }) => {
-//   const [editingCell, setEditingCell] = useState({ id: null, key: null });
-
-//   const handleDoubleClick = (id, key) => setEditingCell({ id, key });
-//   const handleBlur = () => setEditingCell({ id: null, key: null });
-
-//   const renderCell = (todo, key) => {
-//     const isEditing = editingCell.id === todo.id && editingCell.key === key;
-
-//     return (
-//       <td
-//         className={styles.td}
-//         onDoubleClick={() => handleDoubleClick(todo.id, key)}
-//       >
-//         {isEditing ? (
-//           <input
-//             autoFocus
-//             className={styles.input}
-//             value={todo[key]}
-//             // onChange では「画面（State）の更新」だけやる
-//             onChange={(e) => {
-//               const newTodo = { ...todo, [key]: e.target.value };
-//               setTodos(todos.map((t) => (t.id === todo.id ? newTodo : t))); // 親から渡されたsetTodos等で画面だけ変える
-//             }}
-//             // フォーカスが外れた（入力完了）時に、初めてバックエンドへ送る
-//             onBlur={() => updateTodo(todo)}
-//             onKeyDown={(e) => e.key === "Enter" && handleBlur()}
-//           />
-//         ) : (
-//           todo[key]
-//         )}
-//       </td>
-//     );
-//   };
-
-//   return (
-//     <tbody>
-//       {todos.map((todo) => (
-//         <tr key={todo.id}>
-//           {renderCell(todo, "number")}
-//           {renderCell(todo, "category")}
-//           {renderCell(todo, "content")}
-//           {renderCell(todo, "env")}
-//           {renderCell(todo, "expected")}
-//           <td className={styles.td} style={{ textAlign: "center" }}>
-//             <button onClick={() => deleteTodo(todo.id)}>削除</button>
-//           </td>
-//         </tr>
-//       ))}
-//     </tbody>
-//   );
-// };
-
-// export default List;
-//ーーーーーーーーーーーーーーーーーーーーーーーーーーーーーーー
-// "use client";
-// import { useState } from "react";
-
-// const List = ({ todos, deleteTodo, updateTodo }) => {
-//   const tdStyle = {
-//     padding: "10px",
-//     borderBottom: "1px dotted #ccc",
-//     borderRight: "1px solid #333",
-//   };
-
-//   // 編集中のセルを特定するためのステート (行IDと列名の組み合わせ)
-//   const [editingCell, setEditingCell] = useState({ id: null, key: null });
-
-//   const handleDoubleClick = (id, key) => {
-//     setEditingCell({ id, key });
-//   };
-
-//   const handleBlur = () => {
-//     setEditingCell({ id: null, key: null });
-//   };
-
-//   const handleChange = (e, todo, key) => {
-//     updateTodo({ ...todo, [key]: e.target.value });
-//   };
-
-//   const renderCell = (todo, key) => {
-//     const isEditing = editingCell.id === todo.id && editingCell.key === key;
-
-//     return (
-//       <td
-//         style={tdStyle}
-//         onDoubleClick={() => handleDoubleClick(todo.id, key)}
-//       >
-//         {isEditing ? (
-//           <input
-//             autoFocus
-//             style={{ width: "90%" }}
-//             value={todo[key]}
-//             onChange={(e) => handleChange(e, todo, key)}
-//             onBlur={handleBlur}
-//             onKeyDown={(e) => e.key === "Enter" && handleBlur()}
-//           />
-//         ) : (
-//           todo[key]
-//         )}
-//       </td>
-//     );
-//   };
-
-//   return (
-//     <tbody>
-//       {todos.map((todo) => (
-//         <tr key={todo.id}>
-//           {renderCell(todo, "number")}
-//           {renderCell(todo, "category")}
-//           {renderCell(todo, "content")}
-//           {renderCell(todo, "env")}
-//           {renderCell(todo, "expected")}
-//           <td style={{ ...tdStyle, textAlign: "center" }}>
-//             <button onClick={() => deleteTodo(todo.id)}>削除</button>
-//           </td>
-//         </tr>
-//       ))}
-//     </tbody>
-//   );
-// };
-
-// export default List;
+// もし通信（PUT）に失敗したら、画面はどうなりますか？
+// 今の List.js のコードでは、handleBlur が動いた瞬間に setEditingCell({ id: null, key: null }) が実行され、入力モードが終了します。
+// しかし、親の updateTodo で通信に失敗しても、子（List.js）はその失敗を知る術がありません。ユーザーから見ると「書き換えたつもりなのに、リロードしたら元に戻っていた」という不整合が起きます。
