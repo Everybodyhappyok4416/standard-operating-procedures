@@ -25,7 +25,7 @@ const List = ({ todos, deleteTodo, updateTodo }) => {
     const isEditing = editingCell.id === todo.id && editingCell.key === key;
 
     return (
-      // 編集しないセルにはハンドラーを渡す
+      // 編集しないセルにはダブルクリックハンドラーを渡す
       <td
         className={styles.td}
         onDoubleClick={() => handleDoubleClick(todo, key)}
@@ -37,7 +37,7 @@ const List = ({ todos, deleteTodo, updateTodo }) => {
             className={styles.input}
             value={tempValue} // 編集中の文字を表示
             onChange={(e) => setTempValue(e.target.value)} // 文字を打つたびにtempValueを更新
-            onBlur={() => handleBlur(todo, key)} // 外れたら保存
+            onBlur={() => handleBlur(todo, key)} // カーソルが外れたら保存
             onKeyDown={(e) => e.key === "Enter" && e.target.blur()} // Enterでも保存
           />
         ) : (

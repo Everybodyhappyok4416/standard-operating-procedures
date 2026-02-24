@@ -9,7 +9,7 @@
 /* 手順書テーブル全体の枠組み（外枠の線） */
 .table {
   width: 100%;
-  border-collapse: collapse; /* セル同士の線を重ねて1本に見せる設定 */
+  border-collapse: collapse; /* セル同士の線を重ねて1本に見せる */
   border-top: 1px solid #333;   /* テーブル最上部の実線 */
   border-left: 1px solid #333;  /* テーブル最左部の実線 */
 }

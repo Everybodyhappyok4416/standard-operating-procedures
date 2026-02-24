@@ -37,9 +37,9 @@ const Todo = () => {
   }, [fetchTodos]); //データ取得を非同期処理
 
   const createTodo = async (newTodo) => {
-    const { id, ...postData } = newTodo; //クライアント側で振ったIDを削除してDB側で採番
+    const { id, ...postData } = newTodo; //newTodoOBJからクライアント側で振ったIDを削除してpostdataとして取り出す(idはDB側で採番)
     try {
-      const response = await fetch(`${API_URL}/todos`, {
+      const response = await fetch(`${API_URL}/todos`, {//todos tableにpostDataを送信
         method: "POST",
         headers: { "Content-Type": "application/json" }, //go側にJSON型だと通知
         body: JSON.stringify(postData), //jsonに変換して送信
