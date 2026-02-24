@@ -23,7 +23,6 @@ const List = ({ todos, deleteTodo, updateTodo }) => {
   //各セルが編集中かどうか判別しinputかダブルクリックハンドラーを渡す
   const renderCell = (todo, key) => {
     const isEditing = editingCell.id === todo.id && editingCell.key === key;
-
     return (
       // 編集しないセルにはダブルクリックハンドラーを渡す
       <td
