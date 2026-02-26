@@ -25,7 +25,7 @@ type Todo struct {
 }
 
 func main() {
-	// ターミナルの環境変数から読み込む設定（推奨）
+	// ターミナルの環境変数から読み込む設定
 	dsn := os.Getenv("DATABASE_URL")
 	if dsn == "" {
 		dsn = ""
@@ -52,13 +52,13 @@ func main() {
 	db.MustExec(schema)
 
 	// --- ここからサーバーの設定 ---
-	r := gin.Default()
+	r := gin.Default() //ginルーター作成
 
 	// CORS設定を詳細に指定
 	r.Use(cors.New(cors.Config{
 		AllowOrigins: []string{
 			"http://localhost:3000",
-			"https://sop-frontend-one.vercel.app", // ← ここを自分のVercelのURLに変える！
+			"https://sop-frontend-one.vercel.app",
 		},
 		AllowMethods:     []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
 		AllowHeaders:     []string{"Origin", "Content-Type", "Accept"},
@@ -67,14 +67,14 @@ func main() {
 		MaxAge:           12 * time.Hour,
 	}))
 
-	// 手順一覧を取得するAPI
+	// 手順一覧を取得するAPI(スキャニング)
 	r.GET("/todos", func(c *gin.Context) {
 		var todos []Todo
-		// SQLを「*」ではなく、構造体にある項目だけ明示的に指定します
-		// SELECT文に created_at が含まれているか確認！
+		// SQLを「*」ではなく、構造体にある項目だけ明示的に指定
+		// SELECT文に created_at も入れる
 		err := db.Select(&todos, "SELECT id, number, category, content, env, expected, is_completed, created_at FROM todos ORDER BY id ASC")
 		if err != nil {
-			// 【重要】ここが原因を突き止めるためのログ出力です
+			// 原因を突き止めるためのログ出力
 			fmt.Printf("🚨 DB Error: %v\n", err)
 
 			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
