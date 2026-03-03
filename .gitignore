@@ -19,6 +19,7 @@ backend/main
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
+update_apps.sh
 
 # env files
 .env*
