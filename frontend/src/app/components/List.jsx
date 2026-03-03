@@ -65,7 +65,3 @@ const List = ({ todos, deleteTodo, updateTodo }) => {
 };
 
 export default List;
-
-// もし通信（PUT）に失敗したら、画面はどうなりますか？
-// 今の List.js のコードでは、handleBlur が動いた瞬間に setEditingCell({ id: null, key: null }) が実行され、入力モードが終了します。
-// しかし、親の updateTodo で通信に失敗しても、子（List.js）はその失敗を知る術がありません。ユーザーから見ると「書き換えたつもりなのに、リロードしたら元に戻っていた」という不整合が起きます。
