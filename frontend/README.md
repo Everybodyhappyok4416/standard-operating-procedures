@@ -1,36 +1,35 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+・タイトル
+　開発、本番作業手順書アプリ
+・概要
+　本アプリは、システム運用現場での作業ミスをゼロにすることを目指した、作業手順書管理システムです。
+　単なるデータ管理に留まらず、インフラの制約下でのレジリエンス（回復性）と現場のユーザビリティの両立をテーマとしています。
 
-## Getting Started
+・コンセプト
+　Render無料プランの仕様（15分間の無アクセスでスリープ）に対し、以下の設計で対応しています。
+　・自動スリープ解除: サーバー停止を検知すると、フロントエンドから自動でポーリング（再試行）を開始。
 
-First, run the development server:
+　・ステータス可視化: 復帰待ちの間、ユーザーに現在の状況をアニメーションで通知し、離脱や「故障」という誤解を防ぎます。
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+・技術スタック
+　フロントエンド：React/next.js(App Router)
+　バックエンド：Go(Gin)
+　DB：PostgreSQL(Supabase)
+　インフラ：Render, Vercel (CI/CD連携)
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+・機能要件
+　・フルCRUD機能：手順の作成、更新、追加、削除。
+　・スリープ解除機能（サーバーがスリープの場合、自動でリトライを繰り返し、復帰後にデータを反映）
+　・レスポンシブローディング（上記リトライ中に起動状況を通知するアニメーション）
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
-
-## Learn More
-
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+●今後の改善ロードマップ
+1.セキュリティ強化
+　・ログインATH機能追加
+　・本番モードで編集をロックする機能追加
+2.運用自動化、証跡管理
+　・作業完了ボタンでログ記録と自動メール送信機能
+　・各手順に完了ボタンを設け、タイムスタンプ機能追加
+3.インフラの最適化
+　・render由来の部分をコンポーネント化
+　・日付→作業名→手順書でページ分ける
+　・本番作業中はサーバーを起動状態のままにする（スリープさせない）
