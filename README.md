@@ -47,7 +47,6 @@ graph TD
 
 ---
 
-
 ## ● データベース設計 (ER図)
 
 ```mermaid
@@ -67,6 +66,33 @@ erDiagram
 
 ---
 
+## ● 主要API一覧 (REST API)
+バックエンド（Go / Gin）が提供するエンドポイントです。
+
+| Method | Endpoint | Description | Request Body (Example) |
+| :--- | :--- | :--- | :--- |
+| `GET` | `/todos` | 手順一覧の取得 | - |
+| `POST` | `/todos` | 新規手順の作成 | `{"number":"1","category":"DB","content":"..."}` |
+| `PUT` | `/todos/:id` | 手順の更新 / 完了状態の更新 | `{"is_completed": true, "completed_at": "..."}` |
+| `DELETE` | `/todos/:id` | 手順の削除 | - |
+
+---
+
+## ● ローカル起動手順
+本プロジェクトをローカル環境で起動する方法です。
+
+### 1. データベース準備 (Supabase)
+1. Supabaseでプロジェクトを作成し、`todos` テーブルを作成します。
+2. カラム構成は上述の **ER図** に合わせて設定してください。
+
+### 2. バックエンド起動 (Go)
+```bash
+cd backend
+# 環境変数の設定 (.env)
+# DB_URL=postgresql://user:pass@host:5432/dbname
+go run main.go
+
+---
 
 ## ● 機能要件
 * **フルCRUD機能**: 手順の作成、更新、追加、削除。
@@ -89,4 +115,4 @@ erDiagram
 * Render由来のロジックをコンポーネント化して分離
 * 「日付 ＞ 作業名 ＞ 手順書」の階層管理機能
 * 手順の並べ替え機能追加
-* 本番作業中の常時起動（キープアクティブ）機能の追加
+* 本番作業中のDB常時起動（キープアクティブ）機能の追加
