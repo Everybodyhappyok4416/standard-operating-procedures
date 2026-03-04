@@ -53,7 +53,7 @@ graph TD
 ```mermaid
 erDiagram
     todos {
-        id int8 PK "プライマリキー"
+        id int8 "プライマリキー"
         created_at timestamptz "作成日時"
         number text "手順番号"
         category text "大項目/カテゴリ"
