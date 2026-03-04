@@ -53,14 +53,14 @@ graph TD
 ```mermaid
 erDiagram
     todos {
-        int8 id PK "プライマリキー"
-        timestamptz created_at "作成日時"
-        text number "手順番号"
-        text category "大項目/カテゴリ"
-        text env "実行環境"
-        text expected "期待値"
+        id int8 PK "プライマリキー"
+        created_at timestamptz "作成日時"
+        number text "手順番号"
+        category text "大項目/カテゴリ"
+        env text "実行環境"
+        expected text "期待値"
         content text "作業内容"
-        bool is_completed "完了フラグ"
+        is_completed bool "完了フラグ"
         completed_at text "完了時刻(証跡)"
     }
 ```
