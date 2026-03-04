@@ -44,6 +44,7 @@ graph TD
 
     FE -- "REST API (JSON)" --> BE
     BE -- "GORM" --> DB
+```
 
 ---
 
