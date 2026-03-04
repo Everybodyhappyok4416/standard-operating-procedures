@@ -91,8 +91,10 @@ cd backend
 # 環境変数の設定 (.env)
 # DB_URL=postgresql://user:pass@host:5432/dbname
 go run main.go
+```
 
 ---
+
 
 ## ● 機能要件
 * **フルCRUD機能**: 手順の作成、更新、追加、削除。
