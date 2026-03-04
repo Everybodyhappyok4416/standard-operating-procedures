@@ -42,7 +42,7 @@ graph TD
     User[作業員] --> FE
     FE -- "REST API (Fetch/JSON)" --> BE
     FE -. "Automatic Wake-up" .-> RE
-    BE -- "GORM" --> DB
+    BE -- "sqlx / database/sql" --> DB
 ```
 
 ---
@@ -85,7 +85,12 @@ erDiagram
 1. Supabaseでプロジェクトを作成し、`todos` テーブルを作成します。
 2. カラム構成は上述の **ER図** に合わせて設定してください。
 
-### 2. バックエンド起動 (Go)
+### 2. フロントエンド起動 (Next.js)
+cd frontend
+npm install
+npm run dev
+
+### 3. バックエンド起動 (Go)
 ```bash
 cd backend
 # 環境変数の設定 (.env)
