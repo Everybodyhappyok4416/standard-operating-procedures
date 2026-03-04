@@ -48,6 +48,32 @@ graph TD
 
 ---
 
+
+## ● データベース設計 (ER図)
+
+```mermaid
+erDiagram
+    SOPs ||--o{ Steps : "1:N"
+    SOPs {
+        int id PK
+        string title "作業名"
+        string category "日付・カテゴリ"
+        datetime created_at
+    }
+    Steps {
+        int id PK
+        int sop_id FK
+        string content "手順内容"
+        int order_index "並び順"
+        boolean is_completed "完了フラグ"
+        datetime completed_at "完了日時（証跡）"
+        string completed_by "実行者（将来用）"
+    }
+```
+
+---
+
+
 ## ● 機能要件
 * **フルCRUD機能**: 手順の作成、更新、追加、削除。
 * **スリープ解除機能**: サーバーがスリープの場合、自動でリトライを繰り返し、復帰後にデータを反映。
