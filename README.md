@@ -52,17 +52,16 @@ graph TD
 
 ```mermaid
 erDiagram
-    Todos ||--o{ Steps : "contains (Future)"
-    Todos {
-        int8 id PK "ID (Primary)"
-        timestamptz created_at "作成日"
-        text number "番号 (number)"
-        text category "大項目 (category)"
-        text content "作業内容 (content)"
-        text env "環境 (env)"
-        text expected "期待値 (expected)"
+    todos {
+        int8 id PK "プライマリキー"
+        timestamptz created_at "作成日時"
+        text number "手順番号"
+        text category "大項目/カテゴリ"
+        text env "実行環境"
+        text expected "期待値"
+        text content "作業内容"
         bool is_completed "完了フラグ"
-        text completed_at "完了日時 (証跡)"
+        text completed_at "完了時刻(証跡)"
     }
 ```
 
