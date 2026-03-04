@@ -86,9 +86,11 @@ erDiagram
 2. カラム構成は上述の **ER図** に合わせて設定してください。
 
 ### 2. フロントエンド起動 (Next.js)
+```bash
 cd frontend
 npm install
 npm run dev
+```
 
 ### 3. バックエンド起動 (Go)
 ```bash
