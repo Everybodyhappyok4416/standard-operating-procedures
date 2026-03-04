@@ -21,6 +21,33 @@ Render無料プランの仕様（15分間の無アクセスでスリープ）に
 
 ---
 
+## ● アーキテクチャ図
+フロントエンド（Vercel）とバックエンド（Render/Supabase）の構成、およびデータの流れを示しています。
+
+```mermaid
+graph TD
+    subgraph Client_Side
+        User[作業員] --> FE[Next.js / TypeScript]
+    end
+
+    subgraph Infrastructure_Vercel
+        FE
+    end
+
+    subgraph Infrastructure_Render
+        BE[Go / Gin]
+    end
+
+    subgraph External_DB
+        DB[(PostgreSQL / Supabase)]
+    end
+
+    FE -- "REST API (JSON)" --> BE
+    BE -- "GORM" --> DB
+```
+
+---
+
 ## ● 機能要件
 * **フルCRUD機能**: 手順の作成、更新、追加、削除。
 * **スリープ解除機能**: サーバーがスリープの場合、自動でリトライを繰り返し、復帰後にデータを反映。
