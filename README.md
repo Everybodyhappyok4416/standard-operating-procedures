@@ -26,23 +26,22 @@ Render無料プランの仕様（15分間の無アクセスでスリープ）に
 
 ```mermaid
 graph TD
-    subgraph Client_Side
-        User[作業員] --> FE[Next.js / TypeScript]
+    subgraph Client_Vercel
+        FE[Next.js / TypeScript]
     end
 
-    subgraph Infrastructure_Vercel
-        FE
-    end
-
-    subgraph Infrastructure_Render
+    subgraph Server_Render
         BE[Go / Gin]
+        RE[Retry Logic / polling]
     end
 
-    subgraph External_DB
-        DB[(PostgreSQL / Supabase)]
+    subgraph Storage_Supabase
+        DB[(PostgreSQL)]
     end
 
-    FE -- "REST API (JSON)" --> BE
+    User[作業員] --> FE
+    FE -- "REST API (Fetch/JSON)" --> BE
+    FE -. "Automatic Wake-up" .-> RE
     BE -- "GORM" --> DB
 ```
 
@@ -53,21 +52,17 @@ graph TD
 
 ```mermaid
 erDiagram
-    SOPs ||--o{ Steps : "1:N"
-    SOPs {
-        int id PK
-        string title "作業名"
-        string category "日付・カテゴリ"
-        datetime created_at
-    }
-    Steps {
-        int id PK
-        int sop_id FK
-        string content "手順内容"
-        int order_index "並び順"
-        boolean is_completed "完了フラグ"
-        datetime completed_at "完了日時（証跡）"
-        string completed_by "実行者（将来用）"
+    Todos ||--o{ Steps : "contains (Future)"
+    Todos {
+        int8 id PK "ID (Primary)"
+        timestamptz created_at "作成日"
+        text number "番号 (number)"
+        text category "大項目 (category)"
+        text content "作業内容 (content)"
+        text env "環境 (env)"
+        text expected "期待値 (expected)"
+        bool is_completed "完了フラグ"
+        text completed_at "完了日時 (証跡)"
     }
 ```
 
