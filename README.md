@@ -59,9 +59,9 @@ erDiagram
         text category "大項目/カテゴリ"
         text env "実行環境"
         text expected "期待値"
-        text content "作業内容"
+        content text "作業内容"
         bool is_completed "完了フラグ"
-        text completed_at "完了時刻(証跡)"
+        completed_at text "完了時刻(証跡)"
     }
 ```
 
