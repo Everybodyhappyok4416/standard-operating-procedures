@@ -139,23 +139,25 @@ func main() {
 	r.PATCH("/todos/:id/toggle", func(c *gin.Context) {
 		id := c.Param("id")
 		query := `
-			UPDATE todos 
-			SET 
-    			is_completed = NOT is_completed,
-    			completed_at =
-        			CASE
-            			WHEN is_completed = false THEN CURRENT_TIMESTAMP
-            			ELSE NULL
-        			END,
-    			version = version + 1,
-    			updated_at = CURRENT_TIMESTAMP
-			WHERE id = $1
-			RETURNING *`
+		UPDATE todos
+		SET
+   			completed_at =
+        		CASE
+            		WHEN is_completed = false THEN CURRENT_TIMESTAMP
+            		ELSE NULL
+        		END,
+    		is_completed = NOT is_completed,
+    		version = version + 1,
+    		updated_at = CURRENT_TIMESTAMP
+		WHERE id = $1
+		RETURNING *`
 		var updated Todo
 		if err := db.Get(&updated, query, id); err != nil {
-			c.JSON(http.StatusNotFound, gin.H{"error": "Todo not found or update failed"})
+			fmt.Println("🚨 Toggle error:", err)
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 			return
 		}
+
 		c.JSON(http.StatusOK, updated)
 	})
 
