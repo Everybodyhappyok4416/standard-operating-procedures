@@ -68,7 +68,7 @@ const List = ({ todos, deleteTodo, updateTodo, toggleTodo }) => {
           <td className={styles.tdCenter}>
             <input
               type="checkbox"
-              checked={todo.is_completed}
+              checked={todo.is_completed || false}
               onChange={() => handleToggleComplete(todo)}
             />
           </td>
