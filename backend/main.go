@@ -14,42 +14,35 @@ import (
 )
 
 type Todo struct {
-	ID          int       `db:"id" json:"id"`
-	Number      string    `db:"number" json:"number"`
-	Category    string    `db:"category" json:"category"`
-	Content     string    `db:"content" json:"content"`
-	Env         string    `db:"env" json:"env"`
-	Expected    string    `db:"expected" json:"expected"`
-	IsCompleted bool      `db:"is_completed" json:"is_completed"`
-	CreatedAt   time.Time `db:"created_at" json:"created_at"`
+	ID          int    `db:"id" json:"id"`
+	Number      string `db:"number" json:"number"`
+	Category    string `db:"category" json:"category"`
+	Content     string `db:"content" json:"content"`
+	Env         string `db:"env" json:"env"`
+	Expected    string `db:"expected" json:"expected"`
+	IsCompleted bool   `db:"is_completed" json:"is_completed"`
+	// Time型を使用し、Nullを許容するためにポインタにする
+	CompletedAt *time.Time `db:"completed_at" json:"completed_at"`
+	CreatedAt   time.Time  `db:"created_at" json:"created_at"`
+	UpdatedAt   time.Time  `db:"updated_at" json:"updated_at"`
+	Version     int        `db:"version" json:"version"`
 }
 
 func main() {
 	// ターミナルの環境変数から読み込む設定
 	dsn := os.Getenv("DATABASE_URL")
-	if dsn == "" {
-		dsn = ""
-	}
-
 	db, err := sqlx.Connect("postgres", dsn)
 	if err != nil {
-		log.Fatalln("🚨 Supabaseへの接続に失敗しました:", err)
+		log.Fatalln("🚨 Supabase接続失敗:", err)
 	}
 
-	fmt.Println("✅ Supabaseへの接続に成功しました！")
-
-	schema := `
-    CREATE TABLE IF NOT EXISTS todos (
-        id SERIAL PRIMARY KEY,
-        number TEXT,
-        category TEXT,
-        content TEXT,
-        env TEXT,
-        expected TEXT,
-        is_completed BOOLEAN DEFAULT false,
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-    );`
-	db.MustExec(schema)
+	// schema 変数と db.MustExec(schema) は削除
+	// 代わりに接続確認のみ行う
+	err = db.Ping()
+	if err != nil {
+		log.Fatal("🚨 DB応答なし:", err)
+	}
+	fmt.Println("✅ DB接続完了。マイグレーションは schema.sql を参照してください。")
 
 	// --- ここからサーバーの設定 ---
 	r := gin.Default() //ginルーター作成
@@ -60,7 +53,7 @@ func main() {
 			"http://localhost:3000",
 			"https://sop-frontend-one.vercel.app",
 		},
-		AllowMethods:     []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
+		AllowMethods:     []string{"GET", "POST", "PATCH", "DELETE", "OPTIONS"},
 		AllowHeaders:     []string{"Origin", "Content-Type", "Accept"},
 		ExposeHeaders:    []string{"Content-Length"},
 		AllowCredentials: true,
@@ -70,9 +63,10 @@ func main() {
 	// 手順一覧を取得するAPI(スキャニング)
 	r.GET("/todos", func(c *gin.Context) {
 		var todos []Todo
-		// SQLを「*」ではなく、構造体にある項目だけ明示的に指定
-		// SELECT文に created_at も入れる
-		err := db.Select(&todos, "SELECT id, number, category, content, env, expected, is_completed, created_at FROM todos ORDER BY id ASC")
+		// カラムを明示的に指定（SQLに合わせて completed_at, updated_at を追加）
+		query := `SELECT id, number, category, content, env, expected, is_completed, completed_at, created_at, updated_at ,version
+              FROM todos ORDER BY id ASC`
+		err := db.Select(&todos, query)
 		if err != nil {
 			// 原因を突き止めるためのログ出力
 			fmt.Printf("🚨 DB Error: %v\n", err)
@@ -95,7 +89,7 @@ func main() {
 		// 2. DBに挿入し、自動採番されたIDを返す
 		query := `INSERT INTO todos (number, category, content, env, expected) 
                   VALUES ($1, $2, $3, $4, $5) 
-                  RETURNING id, is_completed, created_at`
+                  RETURNING id, is_completed, created_at, version`
 
 		err := db.QueryRow(query,
 			newTodo.Number,
@@ -103,7 +97,7 @@ func main() {
 			newTodo.Content,
 			newTodo.Env,
 			newTodo.Expected,
-		).Scan(&newTodo.ID, &newTodo.IsCompleted, &newTodo.CreatedAt)
+		).Scan(&newTodo.ID, &newTodo.IsCompleted, &newTodo.CreatedAt, &newTodo.Version)
 
 		if err != nil {
 			fmt.Printf("🚨 Insert Error: %v\n", err)
@@ -117,43 +111,89 @@ func main() {
 
 	// 手順を削除するAPI
 	r.DELETE("/todos/:id", func(c *gin.Context) {
-		id := c.Param("id") // URLの末尾からIDを取得
+		idParam := c.Param("id")
 
-		_, err := db.Exec("DELETE FROM todos WHERE id = $1", id)
+		var id int
+		if _, err := fmt.Sscanf(idParam, "%d", &id); err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "invalid id"})
+			return
+		}
+
+		result, err := db.Exec("DELETE FROM todos WHERE id = $1", id)
 		if err != nil {
 			fmt.Printf("🚨 Delete Error: %v\n", err)
-			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "delete failed"})
 			return
 		}
 
-		c.Status(http.StatusNoContent) // 204 No Content を返す
+		rows, _ := result.RowsAffected()
+		if rows == 0 {
+			c.JSON(http.StatusNotFound, gin.H{"error": "todo not found"})
+			return
+		}
+
+		c.Status(http.StatusNoContent)
+	}) // 204 No Content を返す
+
+	// 完了状態のトグル（DB側で反転させる）
+	r.PATCH("/todos/:id/toggle", func(c *gin.Context) {
+		id := c.Param("id")
+		query := `
+			UPDATE todos 
+			SET 
+    			is_completed = NOT is_completed,
+    			completed_at =
+        			CASE
+            			WHEN is_completed = false THEN CURRENT_TIMESTAMP
+            			ELSE NULL
+        			END,
+    			version = version + 1,
+    			updated_at = CURRENT_TIMESTAMP
+			WHERE id = $1
+			RETURNING *`
+		var updated Todo
+		if err := db.Get(&updated, query, id); err != nil {
+			c.JSON(http.StatusNotFound, gin.H{"error": "Todo not found or update failed"})
+			return
+		}
+		c.JSON(http.StatusOK, updated)
 	})
 
-	// 手順を更新するAPI
-	r.PUT("/todos/:id", func(c *gin.Context) {
+	// テキスト変更等の PATCH (楽観的ロック)
+	r.PATCH("/todos/:id", func(c *gin.Context) {
 		id := c.Param("id")
-		var updatedTodo Todo
-
-		if err := c.ShouldBindJSON(&updatedTodo); err != nil {
-			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		// 全フィールドをポインタにして、送られてきたキーだけを判別
+		var input struct {
+			Number      *string `json:"number"`
+			Category    *string `json:"category"`
+			Content     *string `json:"content"`
+			Env         *string `json:"env"`
+			Expected    *string `json:"expected"`
+			IsCompleted *bool   `json:"is_completed"`
+			Version     int     `json:"version" binding:"required"`
+		}
+		if err := c.ShouldBindJSON(&input); err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Version is required"})
 			return
 		}
 
-		query := `UPDATE todos 
-                  SET number=$1, category=$2, content=$3, env=$4, expected=$5, is_completed=$6 
-                  WHERE id=$7`
-
-		_, err := db.Exec(query,
-			updatedTodo.Number, updatedTodo.Category, updatedTodo.Content,
-			updatedTodo.Env, updatedTodo.Expected, updatedTodo.IsCompleted, id)
-
+		query := `
+			UPDATE todos SET 
+				number = COALESCE($1, number), category = COALESCE($2, category),
+				content = COALESCE($3, content), env = COALESCE($4, env),
+				expected = COALESCE($5, expected), version = version + 1, updated_at = CURRENT_TIMESTAMP
+			WHERE id = $6 AND version = $7
+			RETURNING *`
+		var updated Todo
+		err := db.Get(&updated, query, input.Number, input.Category, input.Content, input.Env, input.Expected, id, input.Version)
 		if err != nil {
+			// 更新件数0件（version不一致）の場合
 			fmt.Printf("🚨 Update Error: %v\n", err)
-			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			c.JSON(http.StatusConflict, gin.H{"error": "競合が発生しました。"})
 			return
 		}
 
-		c.JSON(http.StatusOK, updatedTodo)
+		c.JSON(http.StatusOK, updated)
 	})
 
 	port := os.Getenv("PORT")

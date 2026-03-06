@@ -2,8 +2,8 @@ import { useState } from "react";
 import styles from "./Todo.module.css";
 
 // 孫コンポーネント：入力セルの共通化
-const FormCell = ({ children }) => (
-  <td className={styles.tdForm}>{children}</td>
+const FormCell = ({ children, className }) => (
+<td className={`${styles.tdForm} ${className || ""}`}>{children}</td>
 );
 
 //入力中の追加前の値を随時保存
@@ -31,7 +31,7 @@ const Form = ({ createTodo }) => {
       alert("すべての項目を入力してください。");
       return; // 1つでも空があればここで終了
     }
-    createTodo({ ...inputTodo, id: Math.floor(Math.random() * 1e5) }); //{}の内容がnewTodoとして渡る
+createTodo(inputTodo); 
     setInputTodo({
       number: "",
       category: "",
@@ -41,22 +41,30 @@ const Form = ({ createTodo }) => {
     });
   };
 
-  const fields = ["number", "category", "content", "env", "expected"];
+const inputFields = [
+    { name: "number",   class: styles.colNumber },
+    { name: "category", class: styles.colCategory },
+    { name: "content",  class: styles.colContent },
+    { name: "env",      class: styles.colEnv },
+    { name: "expected", class: styles.colExpected },
+  ];
 
   return (
     <tfoot className={styles.tfoot}>
       <tr>
-        {fields.map((field) => (
-          <FormCell key={field}>
+        {inputFields.map((f) => (
+          <FormCell key={f.name} className={f.class}>
             <input
               className={styles.input}
-              name={field}
-              value={inputTodo[field]}
+              name={f.name}
+              value={inputTodo[f.name]}
               onChange={handleChange}
-              placeholder={field}
+              placeholder={f.name}
             />
           </FormCell>
         ))}
+        <FormCell className={styles.colCheck}></FormCell>
+        <FormCell className={styles.colTime}></FormCell>
         <FormCell>
           <button onClick={addTodo} className={styles.buttonAdd}>
             追加

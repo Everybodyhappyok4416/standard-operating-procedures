@@ -1,48 +1,59 @@
 # 📋 開発・本番作業手順書管理アプリ (SOP Manager)
 
-本アプリは、システム運用現場での作業ミスをゼロにすることを目指した、作業手順書管理システムです。  
-単なるデータ管理に留まらず、インフラの制約下でのレジリエンス（回復性）と現場のユーザビリティの両立をテーマとしています。
+システム運用の現場における「作業ミス・事故ゼロ」を目指した、実戦型の手順書管理アプリケーションです。  
+単なるCRUDアプリではなく、**DBを唯一の真実（Single Source of Truth）とする設計**を採用し、  
+マルチユーザー環境でのデータ整合性を担保するため **楽観的ロック（Optimistic Locking）** を実装しています。
 
+さらに、Render無料プランの制約（スリープ）に対する回復性を持ち、  
+**実運用を想定したレジリエンス設計**を備えています。
 ---
 
 ## ● コンセプト
 Render無料プランの仕様（15分間の無アクセスでスリープ）に対し、以下の設計で対応しています。
 
 * **自動スリープ解除**: サーバー停止を検知すると、フロントエンドから自動でポーリング（再試行）を開始。
-* **ステータス可視化**: 復帰待ちの間、ユーザーに現在の状況をアニメーションで通知し、離脱や「故障」という誤解を防ぎます。
+* **ステータス可視化**: スリープ解除中はローディングアニメーションを表示し、  
+ユーザーが「アプリが故障している」と誤解することを防ぎます。
 
 ---
 
 ## ● 技術スタック
-* **フロントエンド**: React / Next.js (App Router)
-* **バックエンド**: Go (Gin)
-* **DB**: PostgreSQL (Supabase)
-* **インフラ**: Render, Vercel (CI/CD連携)
+| Layer | Technology |
+|------|------|
+| Frontend | React / Next.js (App Router) |
+| Backend | Go (Gin) |
+| Database | PostgreSQL (Supabase) |
+| Infrastructure | Render / Vercel |
+| CI/CD | GitHub |
 
 ---
 
 ## ● アーキテクチャ図
-フロントエンド（Vercel）とバックエンド（Render/Supabase）の構成、およびデータの流れを示しています。
+本アプリでは **DBを唯一の状態管理ソース（Source of Truth）** として扱います。  
+フロントエンドのStateはUI表示用のキャッシュとして扱い、状態遷移はバックエンドで管理します。
 
 ```mermaid
 graph TD
-    subgraph Client_Vercel
-        FE[Next.js / TypeScript]
+    subgraph "Client (Vercel)"
+        FE[Next.js App]
+        Retry[Auto Retry Logic]
     end
 
-    subgraph Server_Render
-        BE[Go / Gin]
-        RE[Retry Logic / polling]
+    subgraph "Server (Render)"
+        BE[Go / Gin API]
+        Lock[Optimistic Locking]
     end
 
-    subgraph Storage_Supabase
+    subgraph "Storage (Supabase)"
         DB[(PostgreSQL)]
     end
 
-    User[作業員] --> FE
-    FE -- "REST API (Fetch/JSON)" --> BE
-    FE -. "Automatic Wake-up" .-> RE
-    BE -- "sqlx / database/sql" --> DB
+    User[作業員A / 作業員B] --> FE
+    FE -- PATCH /todos/:id --> BE
+    BE -- version check --> DB
+    DB -- success / conflict --> BE
+    BE --> FE
+    FE -. wake-up polling .-> Retry
 ```
 
 ---
@@ -52,15 +63,17 @@ graph TD
 ```mermaid
 erDiagram
     todos {
-        id int8 "プライマリキー"
-        created_at timestamptz "作成日時"
-        number text "手順番号"
-        category text "大項目/カテゴリ"
-        env text "実行環境"
-        expected text "期待値"
-        content text "作業内容"
-        is_completed bool "完了フラグ"
-        completed_at text "完了時刻(証跡)"
+        int id PK "SERIAL"
+        text number "手順番号 (1.1等)"
+        text category "大項目 (DB等)"
+        text content "作業内容"
+        text env "実行環境"
+        text expected "期待値"
+        boolean is_completed "完了フラグ"
+        timestamptz completed_at "完了時刻(証跡)"
+        timestamptz created_at "作成日時"
+        timestamptz updated_at "最終更新日時"
+        int version "楽観的ロック用"
     }
 ```
 
@@ -69,12 +82,13 @@ erDiagram
 ## ● 主要API一覧 (REST API)
 バックエンド（Go / Gin）が提供するエンドポイントです。
 
-| Method | Endpoint | Description | Request Body (Example) |
-| :--- | :--- | :--- | :--- |
-| `GET` | `/todos` | 手順一覧の取得 | - |
-| `POST` | `/todos` | 新規手順の作成 | `{"number":"1","category":"DB","content":"..."}` |
-| `PUT` | `/todos/:id` | 手順の更新 / 完了状態の更新 | `{"is_completed": true, "completed_at": "..."}` |
-| `DELETE` | `/todos/:id` | 手順の削除 | - |
+| Method | Endpoint | Description |
+|------|------|------|
+| GET | /todos | 手順一覧取得 |
+| POST | /todos | 手順作成 |
+| PATCH | /todos/:id | 手順編集（楽観ロック） |
+| PATCH | /todos/:id/toggle | 完了状態トグル |
+| DELETE | /todos/:id | 手順削除 |
 
 ---
 
@@ -105,6 +119,8 @@ go run main.go
 
 ## ● 機能要件
 * **フルCRUD機能**: 手順の作成、更新、追加、削除。
+* **完了フラグ管理**: 
+* **楽観ロックによる競合回避**: 
 * **スリープ解除機能**: サーバーがスリープの場合、自動でリトライを繰り返し、復帰後にデータを反映。
 * **レスポンシブローディング**: リトライ中に起動状況を通知するアニメーションを表示。
 
@@ -118,7 +134,6 @@ go run main.go
 
 ### 2. 運用自動化・証跡管理
 * 作業完了時のログ記録と自動メール送信
-* 各手順への完了ボタンおよびタイムスタンプ機能の追加
 
 ### 3. インフラの最適化
 * Render由来のロジックをコンポーネント化して分離
